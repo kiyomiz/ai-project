@@ -1,21 +1,17 @@
-from asari.api import Sonar
-import sklearn
-
-print(sklearn.__version__)
+import oseti
 
 list_text = [
     'この人は、この世の中で、いちばんしあわせな人にちがいありません。',
     '芝居小屋もすばらしいし、お客さんもすばらしい人たちでした。',
     'もし中世の時代だったら、おそらく、火あぶりにされたでしょうよ。',
     'みんなのうるさいことといったら、まるで、ハエがびんの中で、ブンブンいっているようでした。',
-    'われわれ人間が、こういうことを考えだすことができるとすれば、われわれは、もっと長生きできていいはずだが'
+    'われわれ人間が、こういうことを考えだすことができるとすれば、われわれは、地の中にうめられるまでに、もっと長生きできていいはずだが'
 ]
 
-sonar = Sonar()
-res = sonar.ping(text="広告多すぎる")
-print(res)
-res = sonar.ping(text="サイコー")
-print(res)
+analyzer = oseti.Analyzer()
+ans = analyzer.analyze('天国で待っている')
+print(ans)
 
-res = list(map(sonar.ping, list_text))
-print(res)
+ans_list = list(map(analyzer.analyze, list_text))
+# +1がポジティブ判定、0がニューラル判定
+print(ans_list)
