@@ -3,6 +3,7 @@ import pandas as pd
 import MeCab
 # import glob
 import oseti
+import numpy as np
 
 from dateutil.relativedelta import relativedelta
 
@@ -11,10 +12,14 @@ def analyze(s):
     try:
         analyzer = oseti.Analyzer()
         ans = analyzer.analyze(s['full_text'])
-        ans_sum = sum(ans)
-        return 1 if ans_sum > 0 else -1 if ans_sum < 0 else 0
+        # print(ans)
+        ans_positive = len([i for i in ans if i > 0])
+        ans_negative = len([i for i in ans if i < 0])
+        # print(pd.Series([ans_positive, ans_negative, ans_positive + ans_negative]))
+        return pd.Series([ans_positive, ans_negative, ans_positive + ans_negative])
     except:
         print("analyze error")
+        return pd.Series([np.nan, np.nan, np.nan])
 
 
 # 引数1 : 説明変数(twitterの情報)の日付
@@ -33,7 +38,7 @@ def data_processing(s_date, delta):
 
     # twitter
     # 感情分析
-    p_data_twitter.loc[:, 'sentiment'] = p_data_twitter[['full_text']].apply(analyze, axis=1)
+    p_data_twitter[['sentiment', 'positive', 'negative']] = p_data_twitter[['full_text']].apply(analyze, axis=1)
     # 日付追加
     p_data_twitter.loc[:, 'date_time'] = pd.to_datetime(p_data_twitter['jst_time'])
     p_data_twitter.loc[:, 's_date'] = p_data_twitter['date_time'].dt.strftime('%Y%m%d')
@@ -80,6 +85,7 @@ def data_processing(s_date, delta):
     del p_data_twitter['full_text']
     del p_data_twitter['date_time']
     del p_data_twitter['s_date']
+    del p_data_twitter['close_price']
     del p_data_twitter['delta_date']
     del p_data_twitter['s_delta_date']
     del p_data_twitter['delta_close_price']
@@ -100,8 +106,13 @@ if __name__ == '__main__':
     # for文+enumerate関数で配列から要素とインデックスを順に取り出す
     for index, date in enumerate(date_ary.values):
         print(f'{index}={date}')
-        # date = '20220317'
         path = f'data2/ml_data_{date}'
         df = data_processing(date, -1)
         # データをファイルに出力
         df.to_csv(path, index=False)
+
+    # date = '20220412'
+    # path = f'data2/ml_data_{date}'
+    # df = data_processing(date, -1)
+    # # データをファイルに出力
+    # df.to_csv(path, index=False)

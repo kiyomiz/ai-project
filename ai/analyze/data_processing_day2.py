@@ -15,10 +15,14 @@ def analyze(s):
         # sは、pandas.core.series.Series
         analyzer = oseti.Analyzer()
         ans = analyzer.analyze(s['full_text'])
-        ans_sum = sum(ans)
-        return 1 if ans_sum > 0 else -1 if ans_sum < 0 else 0
+        # print(ans)
+        ans_positive = len([i for i in ans if i > 0])
+        ans_negative = len([i for i in ans if i < 0])
+        # print(pd.Series([ans_positive, ans_negative, ans_positive + ans_negative]))
+        return pd.Series([ans_positive, ans_negative, ans_positive + ans_negative])
     except:
         print("analyze error")
+        return pd.Series([np.nan, np.nan, np.nan])
 
 
 # 引数1 : 説明変数(twitterの情報)の日付
@@ -37,7 +41,7 @@ def data_processing(s_date, delta):
     p_data_twitter = pd.read_csv(path, header=None, names=['id', 'screen_name', 'jst_time', 'full_text', 'favorite_count', 'retweet_count'])
 
     # 感情分析 axis=1 : analyzeを各行に適用、指定なしは、列に適用
-    p_data_twitter.loc[:, 'sentiment'] = p_data_twitter[['full_text']].apply(analyze, axis=1)
+    p_data_twitter[['sentiment', 'positive', 'negative']] = p_data_twitter[['full_text']].apply(analyze, axis=1)
 
     # 集計
     # 日付
@@ -47,6 +51,8 @@ def data_processing(s_date, delta):
     retweet_count = p_data_twitter['retweet_count'].sum()
     # 感情分析の集計
     sentiment = p_data_twitter['sentiment'].sum()
+    positive = p_data_twitter['positive'].sum()
+    negative = p_data_twitter['negative'].sum()
     # 指定日（過去）
     date_time = dt.strptime(s_date, '%Y%m%d')
     s_delta_date = (date_time + relativedelta(days=delta)).strftime('%Y%m%d')
@@ -55,6 +61,8 @@ def data_processing(s_date, delta):
                                    'favorite_count': [favorite_count],
                                    'retweet_count': [retweet_count],
                                    'sentiment': [sentiment],
+                                   'positive': [positive],
+                                   'negative': [negative],
                                    's_delta_date': [s_delta_date]})
 
     # price
@@ -87,6 +95,7 @@ def data_processing(s_date, delta):
         del p_data_twitter['delta_ratio']
 
     # 削除項目
+    del p_data_twitter['close_price']
     del p_data_twitter['delta_close_price']
     del p_data_twitter['s_delta_date']
 
@@ -98,7 +107,7 @@ def data_processing(s_date, delta):
 
 if __name__ == '__main__':
     date_start = '20220417'
-    date_end = '20220430'
+    date_end = '20220502'
     # date_indexのデータ型：datetime64
     date_index = pd.date_range(start=date_start, end=date_end, freq="D")
     # date_aryは、pandas.core.series.Series
