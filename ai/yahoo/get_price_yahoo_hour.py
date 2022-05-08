@@ -2,7 +2,7 @@ import sys
 import os
 from yahoo_finance_api2 import share
 from yahoo_finance_api2.exceptions import YahooFinanceError
-from datetime import datetime
+import datetime
 import pandas as pd
 
 
@@ -16,7 +16,7 @@ def company_stock(period_type, period, company_code):
         # share.FREQUENCY_TYPE_DAY, 1 だと1日おきにデータを取得
         symbol_data = my_share.get_historical(share.PERIOD_TYPE_DAY,
                                               period_type,
-                                              share.FREQUENCY_TYPE_DAY,
+                                              share.FREQUENCY_TYPE_HOUR,
                                               period)
     except YahooFinanceError as e:
         print(e.message)
@@ -24,11 +24,13 @@ def company_stock(period_type, period, company_code):
 
     # print(type(symbol_data))
     df = pd.DataFrame(symbol_data)
+    # タイムスタンプを変換
     df["datetime"] = pd.to_datetime(df.timestamp, unit="ms")
-    df["year_month"] = df["datetime"].dt.strftime('%Y%m')
-    df["date"] = df['datetime'].dt.strftime('%Y%m%d')
+    # 日本時間へ変換
+    df["datetime_jst"] = df["datetime"] + datetime.timedelta(hours=9)
+    df["date"] = df['datetime_jst'].dt.strftime('%Y%m%d%H')
 
-    path = 'data/price'
+    path = 'data/price_hour'
     if os.path.isfile(path):
         p_data = pd.read_csv(path, header=0)
         print(f'更新前：{len(p_data)}件')
