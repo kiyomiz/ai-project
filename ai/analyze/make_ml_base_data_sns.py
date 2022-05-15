@@ -5,7 +5,7 @@ if __name__ == '__main__':
     base_path = 'data3/ml_base_data'
 
     date_start = '20220317'
-    date_end = '20220416'
+    date_end = '20220502'
     # date_indexのデータ型：datetime64
     date_index = pd.date_range(start=date_start, end=date_end, freq="D")
     # date_aryは、pandas.core.series.Series

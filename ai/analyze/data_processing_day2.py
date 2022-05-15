@@ -18,10 +18,10 @@ def analyze(s):
         # print(ans)
         ans_positive = len([i for i in ans if i > 0])
         ans_negative = len([i for i in ans if i < 0])
-        # print(pd.Series([ans_positive, ans_negative, ans_positive + ans_negative]))
-        return pd.Series([ans_positive, ans_negative, ans_positive + ans_negative])
+        # print(pd.Series([ans_positive + ans_negative, ans_positive, ans_negative]))
+        return pd.Series([ans_positive + ans_negative, ans_positive, ans_negative])
     except:
-        print("analyze error")
+        # print("analyze error")
         return pd.Series([np.nan, np.nan, np.nan])
 
 
@@ -42,6 +42,7 @@ def data_processing(s_date, delta):
 
     # 感情分析 axis=1 : analyzeを各行に適用、指定なしは、列に適用
     p_data_twitter[['sentiment', 'positive', 'negative']] = p_data_twitter[['full_text']].apply(analyze, axis=1)
+    print(f'データ数：{len(p_data_twitter)}')
 
     # 集計
     # 日付

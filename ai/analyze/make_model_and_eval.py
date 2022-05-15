@@ -55,6 +55,7 @@ def make_model_and_eval(l_model, l_x_train, l_x_test, l_y_train, l_y_test):
 
 
 if __name__ == '__main__':
+    pd.set_option('display.max_columns', 20)
     tg_ymd = '20220316'
     path = 'data3/ml_base_data'
     output_ml_result_dir = 'model/'
@@ -64,21 +65,24 @@ if __name__ == '__main__':
     ml_base_data = ml_base_data.loc[ml_base_data['closed_flag'] == 0]
     
     train_data, test_data = train_test_split(ml_base_data, test_size=0.3, random_state=0)
-    print(f'Train:{len(train_data)}件/ Test:{len(test_data)}')
+    print(f'Train:{len(train_data)}件/ Test:{len(test_data)}件')
     print(f'price_status Train  1:{len(train_data.loc[train_data["price_result"]==1])}件')
     print(f'price_status Train  0:{len(train_data.loc[train_data["price_result"]==0])}件')
     print(f'price_status Test  1:{len(test_data.loc[test_data["price_result"]==1])}件')
     print(f'price_status Test  0:{len(test_data.loc[test_data["price_result"]==0])}件')
-    print(f'ans Train  1:{len(train_data.loc[train_data["sentiment"]>=0])}件')
-    print(f'ans Train -1:{len(train_data.loc[train_data["sentiment"]<0])}件')
-    print(f'ans Test  1:{len(test_data.loc[test_data["sentiment"]>=0])}件')
-    print(f'ans Test -1:{len(test_data.loc[test_data["sentiment"]<0])}件')
+    print(f'ans Train positive:{len(train_data.loc[train_data["positive"]>=train_data["negative"]])}件')
+    print(f'ans Train negative:{len(train_data.loc[train_data["positive"]<train_data["negative"]])}件')
+    print(f'ans Test  positive:{len(test_data.loc[test_data["positive"]>=test_data["negative"]])}件')
+    print(f'ans Test  negative:{len(test_data.loc[test_data["positive"]<test_data["negative"]])}件')
 
     x_cols = list(train_data.columns)
     # 目的変数と説明変数を分離する
     # 説明変数名から目的変数名を削除
     x_cols.remove('price_result')
+    # 説明変数名から必要のない列を削除
     x_cols.remove('id')
+    x_cols.remove('s_date')
+    x_cols.remove('closed_flag')
 
     # 目的変数名
     y_targets = ['price_result']

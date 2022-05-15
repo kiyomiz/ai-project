@@ -15,10 +15,10 @@ def analyze(s):
         # print(ans)
         ans_positive = len([i for i in ans if i > 0])
         ans_negative = len([i for i in ans if i < 0])
-        # print(pd.Series([ans_positive, ans_negative, ans_positive + ans_negative]))
-        return pd.Series([ans_positive, ans_negative, ans_positive + ans_negative])
+        # print(pd.Series([ans_positive + ans_negative, ans_positive, ans_negative]))
+        return pd.Series([ans_positive + ans_negative, ans_positive, ans_negative])
     except:
-        print("analyze error")
+        # print("analyze error")
         return pd.Series([np.nan, np.nan, np.nan])
 
 
@@ -35,6 +35,7 @@ def data_processing(s_date, delta):
 
     # twitterのデータをpandasに読み込む(ヘッダーなしCSV)
     p_data_twitter = pd.read_csv(path, header=None, names=['id', 'screen_name', 'jst_time', 'full_text', 'favorite_count', 'retweet_count'])
+    print(f'データ数：{len(p_data_twitter)}')
 
     # twitter
     # 感情分析
@@ -84,7 +85,6 @@ def data_processing(s_date, delta):
     del p_data_twitter['jst_time']
     del p_data_twitter['full_text']
     del p_data_twitter['date_time']
-    del p_data_twitter['s_date']
     del p_data_twitter['close_price']
     del p_data_twitter['delta_date']
     del p_data_twitter['s_delta_date']
@@ -98,7 +98,7 @@ def data_processing(s_date, delta):
 
 if __name__ == '__main__':
     date_start = '20220317'
-    date_end = '20220416'
+    date_end = '20220502'
     # date_indexのデータ型：datetime64
     date_index = pd.date_range(start=date_start, end=date_end, freq="D")
     # date_aryは、pandas.core.series.Series

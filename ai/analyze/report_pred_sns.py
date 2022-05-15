@@ -10,7 +10,7 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
     date_start = '20220417'
     date_end = '20220502'
-    date_path = f'data3/ml_pred_data'
+    date_path = f'data3/ml_base_data'
     model_path = "model/results_20220316"
 
     # model
@@ -70,6 +70,8 @@ if __name__ == '__main__':
 
     # 予測結果データと検証データを結合
     report_valid = pd.merge(pred, df_date, on='s_date', how='left')
+    # 日付ごとにグルーピング s_date毎にprice_resultは変化するので平均を使えば元の値と同じになる
+    report_valid = report_valid.groupby('s_date').mean()[['grad', 'rand', 'tree', 'proba_grad', 'proba_rand', 'proba_tree', 'price_result']]
     # 予測結果検証
     view_data = report_valid.copy()
     print(view_data)

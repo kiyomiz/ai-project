@@ -89,7 +89,7 @@ def get_twitter_data(keyword, str_datetime):
 if __name__ == '__main__':
     # input_keyword = '日経平均 OR TOPIC'
     input_keyword = '＃日経平均 -filter:retweets'
-    input_datetime = '20220429'
+    input_datetime = '20220513'
 
     path = f'data/{input_datetime}'
     # print(input_datetime[:8])
