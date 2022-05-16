@@ -45,6 +45,8 @@ def get_twitter_data(keyword, str_datetime):
     cnt = 0
 
     # カーソルを使用してデータ取得
+    # TODO sinceは、2022/5/15時点、API referenceにない。期待する結果が得られない
+    #      ai/ai/v1に移行
     for tweet in tweepy.Cursor(api.search, q=q,
                                tweet_mode='extended',
                                since=since_date,
@@ -60,7 +62,7 @@ def get_twitter_data(keyword, str_datetime):
         # tweet.id　ツイートのID。ユニークなもので絶対に重複しない。ツイートの識別として利用できる。
         # tweet.user.screen_name　ユーザーネーム（英字のやつ）
         # tweet.created_at　ツイートされた時間
-        # tweet.full_text　ツイート内容。核。tweet_mode = ‘extended’をつけていないと、fill_textではなくtextとなるため注意。
+        # tweet.full_text　ツイート内容。核。tweet_mode = ‘extended’をつけていないと、full_textではなくtextとなるため注意。
         # tweet.favorite_count　ツイートのいいねの数
         # tweet.retweet_count　ツイートのリツイートされた数
         tweets_data.append([tweet.id,
@@ -89,7 +91,7 @@ def get_twitter_data(keyword, str_datetime):
 if __name__ == '__main__':
     # input_keyword = '日経平均 OR TOPIC'
     input_keyword = '＃日経平均 -filter:retweets'
-    input_datetime = '20220513'
+    input_datetime = '20220514'
 
     path = f'data/{input_datetime}'
     # print(input_datetime[:8])
