@@ -29,7 +29,7 @@ def data_processing(s_date, delta):
     if not os.path.isfile(path):
         return None
 
-    path_prie = f'../data/yahoo/price'
+    path_prie = f'../data/yahoo/price_1306.T'
     if not os.path.isfile(path_prie):
         return None
 
@@ -104,7 +104,7 @@ def data_processing(s_date, delta):
 
 if __name__ == '__main__':
     date_start = '20220509'
-    date_end = '20220527'
+    date_end = '20220630'
     # date_indexのデータ型：datetime64
     date_index = pd.date_range(start=date_start, end=date_end, freq="D")
     # date_aryは、pandas.core.series.Series

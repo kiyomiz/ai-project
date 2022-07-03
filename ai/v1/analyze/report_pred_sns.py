@@ -6,10 +6,17 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
+def evaluation(df):
+    df.columns = ['s_date', 'kind', 'price_result', 'cnt']
+    view_data = df.loc[df.groupby(['s_date'])['cnt'].idxmax()].reset_index(drop=True)
+    view_data.loc[(view_data['kind'] == view_data['price_result']), 'correct'] = 1
+    return view_data['correct']
+
+
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
-    date_start = '20220525'
-    date_end = '20220526'
+    date_start = '20220620'
+    date_end = '20220630'
     date_path = 'data/ml_base_data'
     model_path = "model/results_20220509"
 
@@ -51,8 +58,11 @@ if __name__ == '__main__':
         print(f'{index}={date}')
         # 予測に使用するデータ
         x = df_date.loc[df_date['s_date'] == date, x_cols].copy()
+        # 正解データ
+        price_result = df_date.loc[df_date['s_date'] == date, 'price_result'].max()
 
         if len(x) != 0:
+            # 予測
             # 前日比(%)
             #  3:  x > 1
             #  2:  0 <= x < 1
@@ -62,57 +72,36 @@ if __name__ == '__main__':
             pred_g = model_g.predict(x)
             pred_r = model_r.predict(x)
             pred_t = model_t.predict(x)
-            # 4クラスのそれぞれの出現確率 2次元のリスト
-            pred_proba_g = model_g.predict_proba(x)
-            pred_proba_r = model_r.predict_proba(x)
-            pred_proba_t = model_t.predict_proba(x)
 
-            print(pred_proba_g)
-            print(pred_proba_r)
-            print(pred_proba_t)
+            # 1ツイートについて、4クラスのそれぞれの出現確率 2次元のリスト
+            #pred_proba_g = model_g.predict_proba(x)
+            #pred_proba_r = model_r.predict_proba(x)
+            #pred_proba_t = model_t.predict_proba(x)
+            #print(pred_proba_g)
+            #print(pred_proba_r)
+            #print(pred_proba_t)
 
             # 予測結果格納
-            # pred = pred.append(
-            #     pd.DataFrame({'s_date': date,
-            #                   'grad': pred_g, 'rand': pred_r, 'tree': pred_t,
-            #                   'proba_grad': pred_proba_g, 'proba_rand': pred_proba_r, 'proba_tree': pred_proba_t}))
-            pred = pred.append(
-                pd.DataFrame({'s_date': date,
-                              'grad': pred_g, 'rand': pred_r, 'tree': pred_t}))
+            pred = pred.append(pd.DataFrame({'s_date': date, 'grad': pred_g, 'rand': pred_r, 'tree': pred_t,
+                                             'price_result': price_result}))
 
-    # 予測結果データと検証データを結合
-    report_valid = pd.merge(pred, df_date, on='s_date', how='left')
-    # 日付ごとにグルーピング s_date毎にprice_resultは変化するので平均を使えば元の値と同じになる
-    report_valid_grad = report_valid.groupby(['s_date', 'grad']).size()
-    report_valid_rand = report_valid.groupby(['s_date', 'rand']).size()
-    report_valid_tree = report_valid.groupby(['s_date', 'tree']).size()
-    print(report_valid_grad)
-    print(report_valid_rand)
-    print(report_valid_tree)
-    #report_valid = report_valid.groupby(['s_date', 'grad']).mean()[['grad', 'rand', 'tree', 'proba_grad', 'proba_rand', 'proba_tree', 'price_result']]
+    # print(pred)
+
     # 予測結果検証
-    #view_data = report_valid.copy()
-    #print(view_data)
-    # # 正解の判定　正解が1
-    # view_data.loc[(view_data['proba_grad'] >= 0.5) & (view_data['price_result'] == 1), 'correct_grad'] = 1
-    # view_data.loc[(view_data['proba_grad'] < 0.5) & (view_data['price_result'] == 0), 'correct_grad'] = 1
-    # view_data.loc[(view_data['proba_rand'] >= 0.5) & (view_data['price_result'] == 1), 'correct_rand'] = 1
-    # view_data.loc[(view_data['proba_rand'] < 0.5) & (view_data['price_result'] == 0), 'correct_rand'] = 1
-    # view_data.loc[(view_data['proba_tree'] >= 0.5) & (view_data['price_result'] == 1), 'correct_tree'] = 1
-    # view_data.loc[(view_data['proba_tree'] < 0.5) & (view_data['price_result'] == 0), 'correct_tree'] = 1
-    # view_data.loc[:, 'count'] = 1
-    # view_data.fillna(0, inplace=True)
-    # view_data = view_data.groupby('s_date').sum()[['correct_grad', 'correct_rand', 'correct_tree', 'count']]
-    # view_data.loc[:, 'acc_grad'] = view_data['correct_grad'] / view_data['count']
-    # view_data.loc[:, 'acc_rand'] = view_data['correct_rand'] / view_data['count']
-    # view_data.loc[:, 'acc_tree'] = view_data['correct_tree'] / view_data['count']
-    # view_data = view_data[['acc_grad', 'acc_rand', 'acc_tree']]
-    #
-    # print(view_data)
-    #
-    # plt.figure()
-    # # .Tは転置
-    # # annot : 数値表示
-    # sns.heatmap(view_data.T, cmap='Blues', annot=True, yticklabels=3)
-    # plt.savefig('data/seaborn_heatmap_list.png')
-    # plt.close('all')
+    # 日付ごとにグルーピング s_date毎にprice_resultは変化するので、値の分類の数を数える
+    # 's_date', 'grad'は、indexとして格納。<class 'pandas.core.series.Series'>
+    # report_valid_grad = pred.groupby(['s_date', 'grad', 'price_result']).size().reset_index()
+    df_eval = pd.DataFrame(
+        {'acc_grad': evaluation(pred.groupby(['s_date', 'grad', 'price_result']).size().reset_index()),
+         'acc_rand': evaluation(pred.groupby(['s_date', 'rand', 'price_result']).size().reset_index()),
+         'acc_tree': evaluation(pred.groupby(['s_date', 'tree', 'price_result']).size().reset_index())
+         })
+
+    print(df_eval)
+
+    plt.figure()
+    # .Tは転置
+    # annot : 数値表示
+    sns.heatmap(df_eval.T, cmap='Blues', annot=True, yticklabels=3)
+    plt.savefig('data/seaborn_heatmap_list.png')
+    plt.close('all')

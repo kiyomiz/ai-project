@@ -52,7 +52,7 @@ def make_model_and_eval(l_model, l_x_train, l_x_test, l_y_train, l_y_test):
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
     date_start = 20220509
-    date_end = 20220524
+    date_end = 20220619
     path = 'data/ml_base_data'
     output_ml_result_dir = 'model/'
     ml_base_data = pd.read_csv(path, header=0)
