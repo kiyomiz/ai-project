@@ -2,6 +2,8 @@ import MeCab
 import warnings
 warnings.filterwarnings('ignore')
 
+# -Owakati：文章を単語別に分かち書きするのみ
+# -Ochasen：分かち書きと併せて、品詞などの形態素解析に必要な情報が得られる
 mecab = MeCab.Tagger("-Ochasen")
 
 
@@ -33,10 +35,11 @@ from gensim import corpora, matutils
 
 # 名詞リスト
 word_collect = [nouns1, nouns2, nouns3]
-# print(word_collect)
+print(word_collect)
 
 # 辞書の作成
 dictionary = corpora.Dictionary(word_collect)
+print(len(dictionary))
 # for word in dictionary.items():
 #    print(word)
 
@@ -47,15 +50,15 @@ n_words = len(dictionary)
 # 単語のone-hot表現
 x = []
 for nouns in word_collect:
-    # doc2bowで変換
+    # dictionary.doc2bowでBowに変換
     # listの要素が、tupleで、tupleの値は (単語id, 出現回数)
     bow_id = dictionary.doc2bow(nouns)
     # matutils.corpus2denseで、全単語数の長さに変換 listの要素のインデックスが単語id、要素がlistで出現回数で縦方向に保持（複数行、一列）
     # 横方向（一行、複数列）に変換　Tを使うと転置できる
+    # ベクトル化するため最初の要素のみ抽出します。
     bow = matutils.corpus2dense([bow_id], n_words).T[0]
     x.append(bow)
 
 print(x[0])
 print(x[1])
 print(x[2])
-

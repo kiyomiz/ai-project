@@ -30,7 +30,7 @@ def company_stock(period_type, period, company_code):
     df["datetime_jst"] = df["datetime"] + datetime.timedelta(hours=9)
     df["date"] = df['datetime_jst'].dt.strftime('%Y%m%d')
 
-    path = 'data/yahoo/price'
+    path = f'data/yahoo/price_{company_code}'
     if os.path.isfile(path):
         p_data = pd.read_csv(path, header=0)
         print(f'更新前：{len(p_data)}件')
@@ -75,4 +75,4 @@ if __name__ == '__main__':
     # 日本株については.Tをつける：code + ".T"
     # 1306 ＮＥＸＴ ＦＵＮＤＳ ＴＯＰＩＸ連動型上場投信
     # 1321 ＮＥＸＴ ＦＵＮＤＳ 日経225連動型上場投信
-    company_stock(30, 1, '1321.T')
+    company_stock(30, 1, '1306.T')
