@@ -67,8 +67,10 @@ class Net(pl.LightningModule):
     def __init__(self, n_input, n_embed, n_hidden, n_layers, n_output):
         super(Net, self).__init__()
         self.embed = nn.Embedding(n_input, n_embed, padding_idx=1)
-        self.lstm = nn.LSTM(n_embed, n_hidden, n_layers)
-        self.fc = nn.Linear(n_hidden, n_output)
+        # 双方向LSTM : bidirectional=True
+        self.lstm = nn.LSTM(n_embed, n_hidden, n_layers, bidirectional=True)
+        # 前方向と後ろ方向の最後の隠れ層ベクトルを結合したものを受け取るので、n_hiddenは2倍にしている
+        self.fc = nn.Linear(n_hidden * 2 , n_output)
 
         self.train_acc = torchmetrics.Accuracy()
         self.val_acc = torchmetrics.Accuracy()
@@ -76,8 +78,15 @@ class Net(pl.LightningModule):
 
     def forward(self, x):
         x = self.embed(x)
+        # (h, c)はタブルのそれぞれの要素を分けて取得
         x, (h, c) = self.lstm(x)
-        x = self.fc(h[-1])
+        # layersが1の場合、
+        # h[0]がforward
+        # h[1]がbackward
+        h_forward = h[::2, :, :]
+        h_backward = h[1::2, :, :]
+        bih = torch.cat([h_forward[-1], h_backward[-1]], dim=1)
+        x = self.fc(bih)
         return x
 
     def training_step(self, batch, batch_idx):
@@ -108,18 +117,20 @@ class Net(pl.LightningModule):
         return torch.optim.Adam(self.parameters(), lr=0.01)
 
 
-# df.valuesをtrainとvalidとtestに分ける必要がある
+def delete_df(df, df_dalete):
+    df_temp = pd.merge(df, df_dalete, how='left', left_index=True, right_index=True)
+    df_temp = df_temp[df_temp["text_y"].isna()][['text_x', 'label_x']]
+    df_temp.rename(columns={'text_x': 'text', 'label_x': 'label'}, inplace=True)
+    return df_temp
+
+
+# df.valuesをtrainとvalidとtestに分ける
 # train : val : text = 60% : 20% : 20%
 df_train = df.sample(frac=0.6, random_state=0)
 # print(pd.merge(df, df_train, how='left', left_index=True, right_index=True).head(1))
-df_temp = pd.merge(df, df_train, how='left', left_index=True, right_index=True)
-df_temp = df_temp[df_temp["text_y"].isna()][['text_x', 'label_x']]
-df_temp.rename(columns={'text_x': 'text', 'label_x': 'label'}, inplace=True)
-df_val = df_temp.sample(frac=0.5, random_state=0)
-df_temp2 = pd.merge(df_temp, df_val, how='left', left_index=True, right_index=True)
-df_temp2 = df_temp2[df_temp2["text_y"].isna()][['text_x', 'label_x']]
-df_temp2.rename(columns={'text_x': 'text', 'label_x': 'label'}, inplace=True)
-df_test = df_temp2
+df = delete_df(df, df_train)
+df_val = df.sample(frac=0.5, random_state=0)
+df_test = delete_df(df, df_val)
 
 print(df_train.shape)
 print(df_val.shape)
