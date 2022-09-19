@@ -1,3 +1,5 @@
+# 文章生成
+
 import MeCab
 import pandas as pd
 from torchtext.vocab import build_vocab_from_iterator
@@ -62,15 +64,45 @@ def collate_batch(batch):
     return texts, labels
 
 
+# Encoderの定義
+class Encoder(pl.LightingModule):
+
+    def __init__(self, n_input, n_embed, n_hidden, n_layers):
+        super().__init__()
+        self.n_layers = n_layers
+        self.embed = nn.Embedding(n_input, n_embed, padding_idx=1)
+        self.lstm = nn.LSTM(n_embed, n_hidden, n_layers, bidirectional=True)
+
+    def forward(self, x):
+        x = self.embed(x)
+        x, (h, c) = self.lstm(x)
+        return h, c
+
+# Decoderの定義
+class Decoder(pl.LightningModule):
+
+    def __init__(self, n_output, n_embed, n_hidden, n_layers):
+        super().__init__()
+        self.output_dim = n_output
+        self.embed = nn.Embedding(n_output, n_embed, padding_idx=1)
+        self.lstm = nn.LSTM(n_embed, n_hidden, n_layers, bidirecrional=True)
+        self.fc = nn.Linear(n_hidden, n_output)
+
+    def forward(self, x, h, c):
+        x = x.unsqueeze(0)
+        x = self.embed(x)
+        x, (h, c) = self.lstm(x, (h, c))
+        y = self.fx(h[-1])
+        return y, h, c
+
+
 class Net(pl.LightningModule):
 
-    def __init__(self, n_input, n_embed, n_hidden, n_layers, n_output):
+    def __init__(self, *args):
         super().__init__()
         self.embed = nn.Embedding(n_input, n_embed, padding_idx=1)
-        # 双方向LSTM : bidirectional=True
-        self.lstm = nn.LSTM(n_embed, n_hidden, n_layers, bidirectional=True)
-        # 前方向と後ろ方向の最後の隠れ層ベクトルを結合したものを受け取るので、n_hiddenは2倍にしている
-        self.fc = nn.Linear(n_hidden * 2 , n_output)
+        self.encoder = Encoder(n_input, n_embed_enc, n_hidden, n_layers)
+        self.decoder = Decoder(n_output, n_embed_dec, n_hidden, n_layers)
 
         self.train_acc = torchmetrics.Accuracy()
         self.val_acc = torchmetrics.Accuracy()
@@ -80,9 +112,9 @@ class Net(pl.LightningModule):
         x = self.embed(x)
         # (h, c)はタブルのそれぞれの要素を分けて取得
         x, (h, c) = self.lstm(x)
-        # 双方向かつlayersが1の場合、
-        # h[0]がforward（前から後ろへ）
-        # h[1]がbackward（後ろから前へ）
+        # layersが1の場合、
+        # h[0]がforward
+        # h[1]がbackward
         h_forward = h[::2, :, :]
         h_backward = h[1::2, :, :]
         bih = torch.cat([h_forward[-1], h_backward[-1]], dim=1)
@@ -151,7 +183,7 @@ n_embed = 100
 n_hidden = 100
 n_layers = 3
 # n_outputは、labelの種類の数を指定
-n_output = 4
+n_output = 10
 
 # 学習の実行
 pl.seed_everything(0)

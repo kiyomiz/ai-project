@@ -61,8 +61,8 @@ def company_stock(period_type, period, company_code):
     # 日付でソート デフォルトは昇順。降順にしたい場合は引数ascendingをFalseにする。
     df = df.sort_values('date')
     # 休場フラグ(0:取引日、1:休場日)
-    df.loc[df['close'].notna(), 'closed_flag'] = 0
-    df.loc[df['close'].isna(), 'closed_flag'] = 1
+    df.loc[(df['close'].notna()) & (df['closed_flag'].isna()), 'closed_flag'] = 0
+    df.loc[(df['close'].isna()) & (df['closed_flag'].isna()), 'closed_flag'] = 1
     # 欠損プライスを前日のプライスで埋める
     df.loc[:, 'close'] = df[['close']].fillna(method='ffill')
 

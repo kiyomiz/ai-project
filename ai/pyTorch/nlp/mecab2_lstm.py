@@ -65,7 +65,7 @@ def collate_batch(batch):
 class Net(pl.LightningModule):
 
     def __init__(self, n_input, n_embed, n_hidden, n_layers, n_output):
-        super(Net, self).__init__()
+        super().__init__()
         self.embed = nn.Embedding(n_input, n_embed, padding_idx=1)
         self.lstm = nn.LSTM(n_embed, n_hidden, n_layers)
         self.fc = nn.Linear(n_hidden, n_output)
@@ -139,7 +139,8 @@ n_input = len(text_vocab)
 n_embed = 100
 n_hidden = 100
 n_layers = 3
-n_output = 10
+# n_outputは、labelの種類の数を指定
+n_output = 4
 
 # 学習の実行
 pl.seed_everything(0)

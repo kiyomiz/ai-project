@@ -67,6 +67,8 @@ class Net(pl.LightningModule):
         return h
 
     # 学習ループのミニバッチ抽出後の予測と損失算出の処理
+    # 損失(loss)を戻すことで、各パラメータの勾配を算出(loss.backward)、
+    # 勾配の情報(最適化手法)を用いたパラメータの更新は、フレームワークで自動で行う。
     def training_step(self, batch, batch_idx):
         x, t = batch
         y = self(x)
@@ -96,7 +98,7 @@ class Net(pl.LightningModule):
         self.log('test_acc', self.test_acc(y, t), on_step=False, on_epoch=True)
         return loss
 
-    # 最適化手法の設定
+    # 最適化手法の設定(パラメータ更新方法)
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(self.parameters(), lr=0.01)
         return optimizer
