@@ -1,4 +1,4 @@
-# 文章生成
+# TODO 文章生成
 
 import MeCab
 import pandas as pd
@@ -65,7 +65,7 @@ def collate_batch(batch):
 
 
 # Encoderの定義
-class Encoder(pl.LightingModule):
+class Encoder(pl.LightningModule):
 
     def __init__(self, n_input, n_embed, n_hidden, n_layers):
         super().__init__()
@@ -78,6 +78,7 @@ class Encoder(pl.LightingModule):
         x, (h, c) = self.lstm(x)
         return h, c
 
+
 # Decoderの定義
 class Decoder(pl.LightningModule):
 
@@ -85,7 +86,7 @@ class Decoder(pl.LightningModule):
         super().__init__()
         self.output_dim = n_output
         self.embed = nn.Embedding(n_output, n_embed, padding_idx=1)
-        self.lstm = nn.LSTM(n_embed, n_hidden, n_layers, bidirecrional=True)
+        self.lstm = nn.LSTM(n_embed, n_hidden, n_layers, bidirectional=True)
         self.fc = nn.Linear(n_hidden, n_output)
 
     def forward(self, x, h, c):
@@ -100,7 +101,6 @@ class Net(pl.LightningModule):
 
     def __init__(self, *args):
         super().__init__()
-        self.embed = nn.Embedding(n_input, n_embed, padding_idx=1)
         self.encoder = Encoder(n_input, n_embed_enc, n_hidden, n_layers)
         self.decoder = Decoder(n_output, n_embed_dec, n_hidden, n_layers)
 
@@ -108,18 +108,24 @@ class Net(pl.LightningModule):
         self.val_acc = torchmetrics.Accuracy()
         self.test_acc = torchmetrics.Accuracy()
 
-    def forward(self, x):
-        x = self.embed(x)
-        # (h, c)はタブルのそれぞれの要素を分けて取得
-        x, (h, c) = self.lstm(x)
-        # layersが1の場合、
-        # h[0]がforward
-        # h[1]がbackward
-        h_forward = h[::2, :, :]
-        h_backward = h[1::2, :, :]
-        bih = torch.cat([h_forward[-1], h_backward[-1]], dim=1)
-        x = self.fc(bih)
-        return x
+    def forward(self, x, t):
+        max_len, batch_size = t.shape
+        t_vocab_size = self.docoder.output_dim
+        y = torch.zeros(max_len - 1, batch_size, t_vocab_size)
+        h, c = self.encoder(x)
+        inputs = t[0, :]
+
+        # <sos> を損失関数に渡さない
+        for i in range(max_len, -1):
+            _y, h, c = self.decoder(inputs, h, c)
+            y[i] = _y
+            top1 = _y.max(1)[1]
+            inputs = top1
+            # conversion for envaluation
+            y = y.view(-1, y.shape[-1])
+            t = t[1:].view(-1)
+
+            return y, t
 
     def training_step(self, batch, batch_idx):
         x, t = batch
@@ -179,15 +185,19 @@ test_loader = DataLoader(df_test.values, batch_size, collate_fn=collate_batch)
 
 # 詳細設定
 n_input = len(text_vocab)
-n_embed = 100
-n_hidden = 100
+n_output = len(label_vocab)
+
+# Embeding 後の次元数
+n_embed_enc = 200
+n_embed_dec = 200
+
+# LSTM層の定義
+n_hidden = 200
 n_layers = 3
-# n_outputは、labelの種類の数を指定
-n_output = 10
 
 # 学習の実行
 pl.seed_everything(0)
-net = Net(n_input, n_embed, n_hidden, n_layers, n_output)
+net = Net(n_input, n_embed_enc, n_embed_dec, n_hidden, n_layers, n_output)
 trainer = pl.Trainer(max_epochs=3)
 trainer.fit(net, train_loader, val_loader)
 

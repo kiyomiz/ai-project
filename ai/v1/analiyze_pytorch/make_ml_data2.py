@@ -66,24 +66,19 @@ def make_dataset(s_date, delta):
 
     if len(p_data_twitter.index) != 0:
         # 前日比(%)
-        #  3:  x > 1
-        #  2:  0 <= x < 1
-        #  1: -1 <= x < 0
-        #  0: -1 > x
+        #  1:  x >= 0
+        #  0:  x <  0
         p_data_twitter.loc[:, 'delta_ratio'] = p_data_twitter[['close_price', 'delta_close_price']].apply(
                 lambda x: (x['delta_close_price'] - x['close_price']) / x['close_price'] * 100, axis=1)
         # 目的変数設定
-        p_data_twitter.loc[p_data_twitter['delta_ratio'] > 1, 'label'] = 3
-        p_data_twitter.loc[(p_data_twitter['delta_ratio'] >= 0) &
-                           (p_data_twitter['delta_ratio'] < 1), 'label'] = 2
-        p_data_twitter.loc[(p_data_twitter['delta_ratio'] >= -1) &
-                           (p_data_twitter['delta_ratio'] < 0), 'label'] = 1
-        p_data_twitter.loc[p_data_twitter['delta_ratio'] < -1, 'label'] = 0
+        p_data_twitter.loc[p_data_twitter['delta_ratio'] >= 0, 'label'] = 1
+        p_data_twitter.loc[p_data_twitter['delta_ratio'] < 0, 'label'] = 0
         # 前日比 削除
         del p_data_twitter['delta_ratio']
 
     # 休場は除外
-    p_data_twitter = p_data_twitter[p_data_twitter['closed_flag'] == 0]
+    if closed_flag:
+        p_data_twitter = p_data_twitter[p_data_twitter['closed_flag'] == 0]
 
     # 削除
     del p_data_twitter['screen_name']
@@ -110,6 +105,9 @@ def make_dataset(s_date, delta):
 if __name__ == '__main__':
     date_start = '20220509'
     date_end = '20220923'
+    data_delta = 6
+    data_dir = f'data2-{data_delta}'
+    closed_flag = True
     # date_indexのデータ型：datetime64
     date_index = pd.date_range(start=date_start, end=date_end, freq="D")
     # date_aryは、pandas.core.series.Series
@@ -117,9 +115,9 @@ if __name__ == '__main__':
     # for文+enumerate関数で配列から要素とインデックスを順に取り出す
     for index, date in enumerate(date_ary.values):
         print(f'{index}={date}')
-        path = f'data/ml_data_{date}'
-        # twitterのツイートにより1日後の株価は上がるかラベル付けする
-        df = make_dataset(date, 1)
+        path = f'{data_dir}/ml_data_{date}'
+        # twitterのツイートにより2日後の株価は上がるかラベル付けする
+        df = make_dataset(date, data_delta)
         if df is not None:
             # データをファイルに出力
             df.to_csv(path, index=False)

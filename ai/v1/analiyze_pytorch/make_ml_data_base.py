@@ -2,10 +2,11 @@ import os
 import pandas as pd
 
 if __name__ == '__main__':
-    base_path = 'data/ml_base_data'
+    data_dir = 'data2-6'
+    base_path = f'{data_dir}/ml_base_data'
 
     date_start = '20220509'
-    date_end = '20220831'
+    date_end = '20220923'
     # date_indexのデータ型：datetime64
     date_index = pd.date_range(start=date_start, end=date_end, freq="D")
     # date_aryは、pandas.core.series.Series
@@ -16,7 +17,7 @@ if __name__ == '__main__':
     for index, date in enumerate(date_ary.values):
         print(f'{index}={date}')
         # date = '20220414'
-        date_path = f'data/ml_data_{date}'
+        date_path = f'{data_dir}/ml_data_{date}'
         if os.path.isfile(date_path):
             df_date = df_date.append(pd.read_csv(date_path, header=0, engine='python'), ignore_index=True)
 

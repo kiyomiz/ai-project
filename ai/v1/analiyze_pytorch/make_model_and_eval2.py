@@ -9,6 +9,9 @@ import torchmetrics
 
 from ai.ai.v1.analiyze_pytorch.make_ml_vocab import Collate
 
+from datetime import datetime
+import calendar
+from dateutil.relativedelta import relativedelta
 
 import warnings
 
@@ -70,15 +73,30 @@ class Net(pl.LightningModule):
         return torch.optim.Adam(self.parameters(), lr=0.01)
 
 
+def get_last_date(dt):
+    # calendar.monthrange()関数で、月の初日の曜日（月曜が0、日曜が6）と、月の日数のタプルが取得できる。
+    # replaceは、dayを置き換えて、datetimeクラスのインスタンスを作成
+    return dt.replace(day=calendar.monthrange(dt.year, dt.month)[1])
+
+
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
+    mouth_period = 2
     date_start = 20220509
-    date_end = 20220531
-    data_dir = 'data'
+    # date_start = 20220601
+    # date_start = 20220701
+    # date_start = 20220801
+
+    tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
+    tdatetime = tdatetime + relativedelta(months=mouth_period - 1)
+    date_end = int(get_last_date(tdatetime).strftime('%Y%m%d'))
+
+    data_dir = 'data2-6'
     data_path = f'{data_dir}/ml_base_data'
-    vocab_dir = 'vocab'
+    vocab_dir = 'vocab2'
     vocab_path = f'{vocab_dir}/20220509-20220923'
-    output_ml_result_dir = f'model/{date_start}'
+    model_dir = 'model'
+    output_ml_result_dir = f'{model_dir}/{date_start}-{mouth_period}'
 
     # 辞書の読込み
     collate = Collate(vocab_path, None)
@@ -89,6 +107,21 @@ if __name__ == '__main__':
     del ml_base_data['id']
     del ml_base_data['s_date']
 
+    # データ件数を揃える
+    ml_base_data_1 = ml_base_data.loc[ml_base_data["label"] == 1]
+    ml_base_data_0 = ml_base_data.loc[ml_base_data["label"] == 0]
+
+    if len(ml_base_data_1) > len(ml_base_data_0):
+        ml_base_data_1 = ml_base_data_1.sample(
+            frac=(1 - (len(ml_base_data_1) - len(ml_base_data_0)) / len(ml_base_data_1)),
+            random_state=0)
+        ml_base_data = ml_base_data_1.append(ml_base_data_0, ignore_index=True)
+    else:
+        ml_base_data_0 = ml_base_data_0.sample(
+            frac=(1 - (len(ml_base_data_0) - len(ml_base_data_1)) / len(ml_base_data_0)),
+            random_state=0)
+        ml_base_data = ml_base_data_0.append(ml_base_data_1, ignore_index=True)
+
     # 分かち書きを実行
     ml_base_data['text'] = ml_base_data['text'].apply(Collate.tokenize)
     # labelはfloatから文字列に変換(vocabが文字列のみのため)
@@ -97,16 +130,10 @@ if __name__ == '__main__':
     train_data, val_data = train_test_split(ml_base_data, test_size=0.4, random_state=0)
     val_data, test_data = train_test_split(val_data, test_size=0.5, random_state=0)
     print(f'Train:{len(train_data)}件 Val:{len(val_data)}件 Test:{len(test_data)}件')
-    print(f'price_status Train  3:{len(train_data.loc[train_data["label"]=="3"])}件')
-    print(f'price_status Train  2:{len(train_data.loc[train_data["label"]=="2"])}件')
     print(f'price_status Train  1:{len(train_data.loc[train_data["label"]=="1"])}件')
     print(f'price_status Train  0:{len(train_data.loc[train_data["label"]=="0"])}件')
-    print(f'price_status Val    3:{len(val_data.loc[val_data["label"]=="3"])}件')
-    print(f'price_status Val    2:{len(val_data.loc[val_data["label"]=="2"])}件')
     print(f'price_status Val    1:{len(val_data.loc[val_data["label"]=="1"])}件')
     print(f'price_status Val    0:{len(val_data.loc[val_data["label"]=="0"])}件')
-    print(f'price_status Test   3:{len(test_data.loc[test_data["label"]=="3"])}件')
-    print(f'price_status Test   2:{len(test_data.loc[test_data["label"]=="2"])}件')
     print(f'price_status Test   1:{len(test_data.loc[test_data["label"]=="1"])}件')
     print(f'price_status Test   0:{len(test_data.loc[test_data["label"]=="0"])}件')
 
@@ -127,7 +154,7 @@ if __name__ == '__main__':
     # n_outputは、labelの種類の数を指定
     n_output = 4
     # 学習回数
-    epoch = 4
+    epoch = 5
 
     # 学習の実行
     pl.seed_everything(0)
