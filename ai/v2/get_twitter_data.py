@@ -85,8 +85,8 @@ def get_twitter_data(keyword, str_datetime):
 
 
 if __name__ == '__main__':
-    input_keyword = '株式 -filter:retweets'
-    input_datetime = '20221008'
+    input_keyword = '株式 -filter:retweets' # -filter:retweets：リツイートを含まず
+    input_datetime = '20221102'
 
     path = f'data/twitter/{input_datetime}'
     # print(input_datetime[:8])
