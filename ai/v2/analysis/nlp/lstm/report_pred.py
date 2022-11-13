@@ -24,9 +24,9 @@ if __name__ == '__main__':
     data_dir = 'data-1'
     data_path = f'../{data_dir}/ml_base_data'
     vocab_dir = 'vocab'
-    vocab_path = f'{vocab_dir}/20220509-20220630'
+    vocab_path = f'{vocab_dir}/20220509-20220731'
     model_path = 'model-1/'
-    model_name = '20220509-2'
+    model_name = '20220509-3-1-False'
 
     # 日付
     tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
@@ -97,8 +97,8 @@ if __name__ == '__main__':
             output = model(x)
         # argmax関数で最大値のインデックスを取得
         # 予測値において最も値が大きなクラス(最も確率が高い)の番号を取得
-        pred += [int(l.argmax()) for l in output]
-        Y += [int(l) for l in y]
+        pred += [l.argmax() for l in output]
+        Y += [l for l in y]
 
     # 適合率(precision)，再現率(recall)，F1スコア，正解率(accuracy)，マクロ平均，マイクロ平均
     print(classification_report(Y, pred))

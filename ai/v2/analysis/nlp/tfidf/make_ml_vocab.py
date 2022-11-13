@@ -32,21 +32,23 @@ def get_tfidf(vocab_path, ml_base_data):
         bow = matutils.corpus2dense([bow_id], n_words).T[0]
         x.append(bow)
 
-    # インストンス化
-    tfidf = TfidfTransformer()
+    tf_idf = None
+    if len(x) > 0:
+        # インストンス化
+        tfidf = TfidfTransformer()
 
-    # precision は少数以下の桁数の指定
-    np.set_printoptions(precision=4)
+        # precision は少数以下の桁数の指定
+        np.set_printoptions(precision=4)
 
-    # TF-IDFによる特徴ベクトルの生成
-    tf_idf = tfidf.fit_transform(x).toarray()
+        # TF-IDFによる特徴ベクトルの生成
+        tf_idf = tfidf.fit_transform(x).toarray()
 
-    # 変換前: BoW
-    # print(type(x))
-    # print(x[:2])
-    # 変換後: TF-IDF
-    # print(type(tf_idf))
-    # print(tf_idf[:2])
+        # 変換前: BoW
+        # print(type(x))
+        # print(x[:2])
+        # 変換後: TF-IDF
+        # print(type(tf_idf))
+        # print(tf_idf[:2])
 
     return tf_idf, labels, dictionary
 
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
     mouth_period = 3
     delta_ratio = 1  # 変化率の0からの差
-    favorite_retweet_flag = True
+    # favorite_retweet_flag = True
     date_start = 20220509
 
     tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
@@ -102,8 +104,8 @@ if __name__ == '__main__':
     ml_base_data.loc[ml_base_data['delta_ratio'] <= -1 * delta_ratio, 'label'] = 0
 
     # お気に入りが0、または、リツイートが0は除外
-    if favorite_retweet_flag:
-        p_data_twitter = ml_base_data[(ml_base_data['favorite_count'] != 0) | (ml_base_data['retweet_count'] != 0)]
+    # if favorite_retweet_flag:
+    #     p_data_twitter = ml_base_data[(ml_base_data['favorite_count'] != 0) | (ml_base_data['retweet_count'] != 0)]
 
     # 不要項目削除
     del ml_base_data['id']
@@ -120,16 +122,16 @@ if __name__ == '__main__':
     # gensimを用いてBoW用の辞書を作成
     # 辞書を作成
     dictionary = corpora.Dictionary(word_collect)
-    print(len(dictionary))
+    # print(len(dictionary))
 
     # 出現回数でフィルタリング
     # 出現回数が少ない単語をフィルタリングすることで特徴のある単語のみに絞る
     # より重要な単語で特長抽出できたことと併せて、全体の計算量を削減する効果もあります。
-    dictionary.filter_extremes(no_below=2)
-    print(len(dictionary))
+    dictionary.filter_extremes(no_below=5)
+    # print(len(dictionary))
 
     # 単語->id
-    print(dictionary.token2id)
+    # print(dictionary.token2id)
 
     # 保存
     dictionary.save_as_text(vocab_path)

@@ -4,12 +4,10 @@ from enum import Enum
 
 import pandas as pd
 import torch
-
+from ai.ai.v2.analysis.nlp.lstm.make_model_and_eval import Net, Collate
+from torch.utils.data import DataLoader
+import MeCab
 from sklearn.metrics import classification_report
-from torch.utils.data import DataLoader, TensorDataset, random_split
-
-from ai.ai.v2.analysis.nlp.tfidf.make_model_and_eval import Net
-from ai.ai.v2.analysis.nlp.tfidf.make_ml_vocab import get_tfidf
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -47,15 +45,15 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
     mouth_period = 1
     # date_start = 20220801
-    date_start = 20220901
-    # date_start = 20221001
+    # date_start = 20220901
+    date_start = 20221001
 
-    data_dir = 'data-2'
+    data_dir = 'data-4'
     data_path = f'../{data_dir}/ml_base_data'
     vocab_dir = 'vocab'
     vocab_path = f'{vocab_dir}/20220509-20220731'
-    model_path = 'model-2/'
-    model_name = '20220509-3-1-False'
+    model_path = 'model-4/'
+    model_name = '20220509-3-1-True'
     collect_type = Collect.TOP
 
     # 集計方法
@@ -68,6 +66,9 @@ if __name__ == '__main__':
     tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
     tdatetime = tdatetime + relativedelta(months=mouth_period - 1)
     date_end = int(get_last_date(tdatetime).strftime('%Y%m%d'))
+
+    # 辞書の読込み
+    collate = Collate(vocab_path, None)
 
     # データの読込み
     ml_base_data = pd.read_csv(data_path, header=0)
@@ -85,15 +86,21 @@ if __name__ == '__main__':
     # del ml_base_data['s_date']
     del ml_base_data['favorite_count']
     del ml_base_data['retweet_count']
+    del ml_base_data['delta_ratio']
 
     # 変動なしは、正解・不正解なしなので除外
     ml_base_data = ml_base_data[(ml_base_data['label'] == 0) | (ml_base_data['label'] == 1)]
 
-    print(f'sum:{len(ml_base_data)}件')
-    print(f'price_status 1:{len(ml_base_data.loc[ml_base_data["label"]==1])}件')
-    print(f'price_status 0:{len(ml_base_data.loc[ml_base_data["label"]==0])}件')
+    # 分かち書きを実行
+    ml_base_data['text'] = ml_base_data['text'].apply(Collate.tokenize)
+    # labelはfloatから文字列に変換(vocabが文字列のみのため)
+    ml_base_data['label'] = ml_base_data['label'].map('{:.0f}'.format)
 
-    # モデルパス
+    print(f'sum:{len(ml_base_data)}件')
+    print(f'price_status 1:{len(ml_base_data.loc[ml_base_data["label"]=="1"])}件')
+    print(f'price_status 0:{len(ml_base_data.loc[ml_base_data["label"]=="0"])}件')
+
+    # モデルのパス
     model_path = os.path.join(model_path, model_name)
     # モデルの読込み モデル全体
     model = torch.load(model_path)
@@ -112,36 +119,24 @@ if __name__ == '__main__':
     for index, date in enumerate(date_ary.values):
         print(f'{index}={date}')
         ml_base_data_d = ml_base_data.loc[ml_base_data["s_date"] == float(date)]
-
-        # データをtf_idf, labelに変換
-        tf_idf, labels, dictionary = get_tfidf(vocab_path, ml_base_data_d)
-
-        if tf_idf is None:
-            continue
-
-        # PyTorchで学習に使用できる形式へ変換
-        x = torch.tensor(tf_idf, dtype=torch.float32)
-        t = torch.tensor(labels, dtype=torch.int64)
-        # print(type(x), x.dtype, type(t), t.dtype)
-
-        # 入力値と目標値をまとめて、ひとつのオブジェクトdatasetに変換
-        dataset = TensorDataset(x, t)
-
-        # ランダムに分割を行うため、シードを固定して再現性を確保
-        torch.manual_seed(0)
-
+        del ml_base_data_d['s_date']
         # バッチサイズ
         batch_size = len(ml_base_data_d)
 
         if batch_size > 0:
-            # Data Loadkerを用意
-            test_loader = torch.utils.data.DataLoader(dataset, batch_size)
+            # loader
+            test_loader = DataLoader(ml_base_data_d.values, batch_size, collate_fn=collate.collate_batch)
 
             for i, (x, y) in enumerate(test_loader):
                 # print(i)
                 with torch.no_grad():
                     output = model(x)
+                # outputのl
+                # [0] : 下降確率
+                # [1] : 上昇確率
                 pred += [collect_one_day([l[1] for l in output])]
+                # yのl
+                # 1日単位で、0 or 1のどちらか
                 Y += [collect_one_day([l for l in y])]
 
     # 適合率(precision)，再現率(recall)，F1スコア，正解率(accuracy)，マクロ平均，マイクロ平均

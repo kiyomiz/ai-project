@@ -94,11 +94,9 @@ def data_processing(s_date, delta):
 
 
 if __name__ == '__main__':
-    # date_start = '20220509'
-    # date_end = '20220930'
-    date_start = '20221001'
+    date_start = '20220509'
     date_end = '20221031'
-    data_delta = 4   # 何日後の株価と比較するか
+    data_delta = -1   # 何日後の株価と比較するか
     data_dir = f'data-{data_delta}'
 
     # date_indexのデータ型：datetime64

@@ -55,17 +55,17 @@ if __name__ == '__main__':
     pd.set_option('display.expand_frame_repr', False)
 
     mouth_period = 3
-    delta_ratio = 0.01  # 変化率の0からの差
-    favorite_retweet_flag = True  # お気に入り、リツイート0件を除外
+    delta_ratio = 1  # 変化率の0からの差
+    favorite_retweet_flag = False  # お気に入り、リツイート0件を除外
     date_start = 20220509
 
     tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
     tdatetime = tdatetime + relativedelta(months=mouth_period - 1)
     date_end = int(get_last_date(tdatetime).strftime('%Y%m%d'))
 
-    data_dir = 'data--1'
+    data_dir = 'data-1'
     base_path = f'{data_dir}/ml_base_data'
-    model_dir = 'model--1'
+    model_dir = 'model-1'
     target_output_dir = f'{model_dir}/{date_start}-{mouth_period}-{delta_ratio}-{favorite_retweet_flag}'
     os.makedirs(target_output_dir, exist_ok=True)
     print(target_output_dir)
@@ -102,14 +102,42 @@ if __name__ == '__main__':
 
     train_data, test_data = train_test_split(ml_base_data, test_size=0.3, random_state=0, stratify=ml_base_data.label)
     print(f'Train:{len(train_data)}件/ Test:{len(test_data)}')
+
     print(f'price_status Train  1:{len(train_data.loc[train_data["label"]==1])}件')
     print(f'price_status Train  0:{len(train_data.loc[train_data["label"]==0])}件')
+
     print(f'price_status Test  1:{len(test_data.loc[test_data["label"]==1])}件')
     print(f'price_status Test  0:{len(test_data.loc[test_data["label"]==0])}件')
-    print(f'ans Train positive:{len(train_data.loc[train_data["positive"]>=train_data["negative"]])}件')
-    print(f'ans Train negative:{len(train_data.loc[train_data["positive"]<train_data["negative"]])}件')
-    print(f'ans Test  positive:{len(test_data.loc[test_data["positive"]>=test_data["negative"]])}件')
-    print(f'ans Test  negative:{len(test_data.loc[test_data["positive"]<test_data["negative"]])}件')
+
+    print(f'ans Train positive:{len(train_data.loc[train_data["positive"]>0])}件')
+    print(f'ans Train negative:{len(train_data.loc[train_data["negative"]>0])}件')
+    print(f'ans Train active:{len(train_data.loc[train_data["active"]>0])}件')
+    print(f'ans Train passive:{len(train_data.loc[train_data["passive"]>0])}件')
+    print(f'ans Train yorokobi:{len(train_data.loc[train_data["yorokobi"]>0])}件')
+    print(f'ans Train suki:{len(train_data.loc[train_data["suki"]>0])}件')
+    print(f'ans Train iya:{len(train_data.loc[train_data["iya"]>0])}件')
+    print(f'ans Train kowa:{len(train_data.loc[train_data["kowa"]>0])}件')
+    print(f'ans Train yasu:{len(train_data.loc[train_data["yasu"]>0])}件')
+    print(f'ans Train aware:{len(train_data.loc[train_data["aware"]>0])}件')
+    print(f'ans Train ikari:{len(train_data.loc[train_data["ikari"]>0])}件')
+    print(f'ans Train takaburi:{len(train_data.loc[train_data["takaburi"]>0])}件')
+    print(f'ans Train haji:{len(train_data.loc[train_data["haji"]>0])}件')
+    print(f'ans Train odoroki:{len(train_data.loc[train_data["odoroki"]>0])}件')
+
+    print(f'ans Test positive:{len(test_data.loc[test_data["positive"]>0])}件')
+    print(f'ans Test negative:{len(test_data.loc[test_data["negative"]>0])}件')
+    print(f'ans Test active:{len(test_data.loc[test_data["active"]>0])}件')
+    print(f'ans Test passive:{len(test_data.loc[test_data["passive"]>0])}件')
+    print(f'ans Test yorokobi:{len(test_data.loc[test_data["yorokobi"]>0])}件')
+    print(f'ans Test suki:{len(test_data.loc[test_data["suki"]>0])}件')
+    print(f'ans Test iya:{len(test_data.loc[test_data["iya"]>0])}件')
+    print(f'ans Test kowa:{len(test_data.loc[test_data["kowa"]>0])}件')
+    print(f'ans Test yasu:{len(test_data.loc[test_data["yasu"]>0])}件')
+    print(f'ans Test aware:{len(test_data.loc[test_data["aware"]>0])}件')
+    print(f'ans Test ikari:{len(test_data.loc[test_data["ikari"]>0])}件')
+    print(f'ans Test takaburi:{len(test_data.loc[test_data["takaburi"]>0])}件')
+    print(f'ans Test haji:{len(test_data.loc[test_data["haji"]>0])}件')
+    print(f'ans Test odoroki:{len(test_data.loc[test_data["odoroki"]>0])}件')
 
     x_cols = list(train_data.columns)
     # 目的変数と説明変数を分離する

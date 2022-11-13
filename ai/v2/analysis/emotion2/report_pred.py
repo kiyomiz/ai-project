@@ -14,12 +14,12 @@ if __name__ == '__main__':
     pd.set_option('display.expand_frame_repr', False)
     mouth_period = 1
     # date_start = '20220801'
-    # date_start = '20220901'
-    date_start = '20221001'
+    date_start = '20220901'
+    # date_start = '20221001'
 
-    data_dir = 'data--1'
+    data_dir = 'data-1'
     data_path = f'{data_dir}/ml_base_data'
-    model_path = "model--1/20220509-3-0.01-True"
+    model_path = "model-1/20220509-3-1-False"
 
     # 日付
     tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
@@ -40,6 +40,8 @@ if __name__ == '__main__':
         model_r = pickle.load(f)
     with open(model_t_path, mode='rb') as f:
         model_t = pickle.load(f)
+
+    models = {'proba_grad': model_g, 'proba_rand': model_r, 'proba_tree': model_t}
 
     # 説明変数列
     x_cols_name = 'x_cols.csv'
@@ -75,23 +77,29 @@ if __name__ == '__main__':
         price_result = df_data.loc[df_data['s_date'] == date, 'label'].max()
 
         if len(x) != 0:
-            # 予測
-            # 0:株価が下がる or 1:株価が上がる
-            # pred_g = model_g.predict(x)
-            # pred_r = model_r.predict(x)
-            # pred_t = model_t.predict(x)
+            pred = pd.DataFrame()
+            for name, model in models.items():
+                # 予測
+                # 0:株価が下がる or 1:株価が上がる
+                # pred_g = model_g.predict(x)
+                # pred_r = model_r.predict(x)
+                # pred_t = model_t.predict(x)
 
-            # 1: 株価が上がる確率 ([:, 0]で、0:株価が下がる確率)
-            pred_proba_g = model_g.predict_proba(x)[:, 1]
-            pred_proba_r = model_r.predict_proba(x)[:, 1]
-            pred_proba_t = model_t.predict_proba(x)[:, 1]
+                # [:, 1]は、1:株価が上がる確率 ([:, 0]で、0:株価が下がる確率)
+                pred_proba_o = model_g.predict_proba(x)[:, 1]
+                # 1.上昇確率:値が大きい10件の平均
+                # 0.下降確率:値が小さい10件の平均
+                pred_proba_o.sort() # 昇順
+                pred_proba_1 = pred_proba_o[-100:]
+                pred_proba_0 = pred_proba_o[: 100]
+                pred_proba_1 = sum(pred_proba_1) / len(pred_proba_1)
+                pred_proba_0 = sum(pred_proba_0) / len(pred_proba_0)
+                pred_proba = [pred_proba_1, pred_proba_0]
 
-            # 予測結果格納
-            pred = pd.DataFrame({'s_date': date,
-                                 'proba_grad': pred_proba_g,
-                                 'proba_rand': pred_proba_r,
-                                 'proba_tree': pred_proba_t}
-                                )
+                # 予測結果格納
+                pred[name] = pred_proba
+
+            pred['s_date'] = date
 
             # 予測結果データと検証データを結合
             report_valid = pd.merge(pred, df_data, on='s_date', how='inner')
@@ -108,7 +116,7 @@ if __name__ == '__main__':
     pred_rand += [round(l) for l in view_data['proba_rand']]
     pred_tree += [round(l) for l in view_data['proba_tree']]
     pred = {'grad': pred_grad, 'rand': pred_rand, 'tree': pred_tree}
-    Y += [l for l in view_data['label']]
+    Y += [int(l) for l in view_data['label']]
 
     for k, v in pred.items():
         print(f'*** {k} ***')

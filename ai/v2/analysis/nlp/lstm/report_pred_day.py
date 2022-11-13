@@ -35,9 +35,9 @@ if __name__ == '__main__':
     data_dir = 'data-1'
     data_path = f'../{data_dir}/ml_base_data'
     vocab_dir = 'vocab'
-    vocab_path = f'{vocab_dir}/20220509-20220630'
+    vocab_path = f'{vocab_dir}/20220509-20220731'
     model_path = 'model-1/'
-    model_name = '20220509-2'
+    model_name = '20220509-3-1-False'
 
     # 日付
     tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
@@ -105,11 +105,13 @@ if __name__ == '__main__':
             test_loader = DataLoader(ml_base_data_d.values, batch_size, collate_fn=collate.collate_batch)
 
             for i, (x, y) in enumerate(test_loader):
-                print(i)
+                # print(i)
                 with torch.no_grad():
                     output = model(x)
-                pred += [collect_one_day([int(l.argmax()) for l in output])]
-                Y += [collect_one_day([int(l) for l in y])]
+                # argmax() 配列で、一番大きい要素の「インデックス（順番）」を返す関数
+                # インデックスがラベルに対応 0:下降,1:上昇
+                pred += [collect_one_day([l.argmax() for l in output])]
+                Y += [collect_one_day([l for l in y])]
 
     # 適合率(precision)，再現率(recall)，F1スコア，正解率(accuracy)，マクロ平均，マイクロ平均
     print(classification_report(Y, pred))

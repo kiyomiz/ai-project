@@ -94,9 +94,9 @@ class Collate:
 
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
-    mouth_period = 2
-    delta_ratio = 1  # 変化率の0からの差
-    favorite_retweet_flag = True
+    mouth_period = 3
+    # delta_ratio = 1  # 変化率の0からの差
+    # favorite_retweet_flag = False
     date_start = 20220509
 
     tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
@@ -114,13 +114,15 @@ if __name__ == '__main__':
     # 正解ラベルを付与
     # 変化率(%)
     #  1:  上昇
-    #  0:  下降
-    ml_base_data.loc[ml_base_data['delta_ratio'] >= delta_ratio, 'label'] = 1
-    ml_base_data.loc[ml_base_data['delta_ratio'] <= -1 * delta_ratio, 'label'] = 0
+    #  0:  下降 (変化率が0%を含む : ラベルのvocabを作成するだけなので問題なし)
+    # ml_base_data.loc[ml_base_data['delta_ratio'] >= delta_ratio, 'label'] = 1
+    # ml_base_data.loc[ml_base_data['delta_ratio'] <= -1 * delta_ratio, 'label'] = 0
+    ml_base_data.loc[ml_base_data['delta_ratio'] > 0, 'label'] = 1
+    ml_base_data.loc[ml_base_data['delta_ratio'] <= 0, 'label'] = 0
 
     # お気に入りが0、または、リツイートが0は除外
-    if favorite_retweet_flag:
-        p_data_twitter = ml_base_data[(ml_base_data['favorite_count'] != 0) | (ml_base_data['retweet_count'] != 0)]
+    # if favorite_retweet_flag:
+    #     p_data_twitter = ml_base_data[(ml_base_data['favorite_count'] != 0) | (ml_base_data['retweet_count'] != 0)]
 
     # 不要項目削除
     del ml_base_data['id']
@@ -130,7 +132,7 @@ if __name__ == '__main__':
     del ml_base_data['delta_ratio']
 
     # 変動なしは除外
-    ml_base_data = ml_base_data.loc[(ml_base_data['label'] == 0) | (ml_base_data['label'] == 1)]
+    # ml_base_data = ml_base_data.loc[(ml_base_data['label'] == 0) | (ml_base_data['label'] == 1)]
 
     # 分かち書きを実行
     ml_base_data['text'] = ml_base_data['text'].apply(Collate.tokenize)

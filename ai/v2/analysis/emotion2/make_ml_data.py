@@ -1,20 +1,100 @@
 import os
 import pandas as pd
+import MeCab
+# import glob
+import oseti
+import numpy as np
 
 from dateutil.relativedelta import relativedelta
 
+import mlask
+import subprocess
 
-def data_cleansing(t):
-    # 空白文字削除
-    t = t.replace('\u3000', '')
-    # 改行削除
-    t = t.replace('\n', '')
-    return t
+# orientation : 'POSITIVE'
+# activation : 'PASSIVE'
+# representative
+# 'yorokobi' : 喜
+# 'suki' : 好
+# 'iya' : 嫌
+# 'kowa' : 怖
+# 'yasu' : 安
+# 'aware' : 哀
+# 'ikari' : 怒
+# 'takaburi' : 昂
+# 'haji' : 恥
+# 'odoroki' : 驚
+
+def analyze(s):
+    try:
+        # analyzer = oseti.Analyzer()
+        # ans = analyzer.analyze(s['full_text'])
+        emotion_analyer = mlask.MLAsk()
+        ans = emotion_analyer.analyze(s['full_text'])
+
+        result_dict = {
+            'positive': 0,
+            'negative': 0,
+            'active': 0,
+            'passive': 0,
+            'yorokobi': 0,
+            'suki': 0,
+            'iya': 0,
+            'kowa': 0,
+            'yasu': 0,
+            'aware': 0,
+            'ikari': 0,
+            'takaburi': 0,
+            'haji': 0,
+            'odoroki': 0,
+        }
+
+        if ans['emotion'] is not None:
+            for k, v in ans['emotion'].items():
+                result_dict[k] = len(v)
+
+            result_dict['positive'] = 1 if ans['orientation'] in 'POSITIVE' else 0
+            result_dict['negative'] = 1 if ans['orientation'] in 'NEGATIVE' else 0
+            result_dict['active'] = 1 if ans['activation'] in 'ACTIVE' else 0
+            result_dict['passive'] = 1 if ans['activation'] in 'PASSIVE' else 0
+
+        # print(pd.Series([ans_positive + ans_negative, ans_positive, ans_negative]))
+        return pd.Series([result_dict['positive'],
+                          result_dict['negative'],
+                          result_dict['active'],
+                          result_dict['passive'],
+                          result_dict['yorokobi'],
+                          result_dict['suki'],
+                          result_dict['iya'],
+                          result_dict['kowa'],
+                          result_dict['yasu'],
+                          result_dict['aware'],
+                          result_dict['ikari'],
+                          result_dict['takaburi'],
+                          result_dict['haji'],
+                          result_dict['odoroki'],
+                          ])
+    except:
+        # print("analyze error")
+        return pd.Series([np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          np.nan,
+                          ])
 
 
 # 引数1 : 説明変数(twitterの情報)の日付
 # 引数2 : 目的変数(日経平均株価の増減)と説明変数(twitterの情報)の日付差
-def make_dataset(s_date, delta):
+def data_processing(s_date, delta):
     path = f'../../data/twitter/{s_date}'
     if not os.path.isfile(path):
         return None
@@ -27,13 +107,16 @@ def make_dataset(s_date, delta):
     p_data_twitter = pd.read_csv(path, header=None, names=['id', 'screen_name', 'jst_time', 'full_text', 'favorite_count', 'retweet_count'])
     print(f'データ数：{len(p_data_twitter)}')
 
-    if p_data_twitter.size == 0:
+    if len(p_data_twitter) == 0:
         return None
 
     # twitter
-    # データクレンジング
-    p_data_twitter['full_text'] = p_data_twitter['full_text'].apply(data_cleansing)
-
+    # 感情分析
+    p_data_twitter[['positive', 'negative',
+                    'active', 'passive',
+                    'yorokobi', 'suki', 'iya', 'kowa', 'yasu',
+                    'aware', 'ikari', 'takaburi', 'haji', 'odoroki'
+                    ]] = p_data_twitter[['full_text']].apply(analyze, axis=1)
     # 日付追加
     p_data_twitter.loc[:, 'date_time'] = pd.to_datetime(p_data_twitter['jst_time'])
     p_data_twitter.loc[:, 's_date'] = p_data_twitter['date_time'].dt.strftime('%Y%m%d')
@@ -51,7 +134,6 @@ def make_dataset(s_date, delta):
                                                     p_data_price,
                                                     on='s_date',
                                                     how='inner')['close']
-
     p_data_twitter.loc[:, 'closed_flag'] = pd.merge(p_data_twitter,
                                                     p_data_price,
                                                     left_on='s_delta_date',
@@ -66,43 +148,18 @@ def make_dataset(s_date, delta):
 
     if len(p_data_twitter.index) != 0:
         # 前日比(%)
-        #  1:  上昇
-        #  0:  下降
-        #  9:  変動小 or 無
         p_data_twitter.loc[:, 'delta_ratio'] = p_data_twitter[['close_price', 'delta_close_price']].apply(
                 lambda x: (x['delta_close_price'] - x['close_price']) / x['close_price'] * 100, axis=1)
-        # 目的変数設定
-        # p_data_twitter.loc[p_data_twitter['delta_ratio'] >= delta_ratio, 'label'] = 1
-        # p_data_twitter.loc[p_data_twitter['delta_ratio'] <= -1 * delta_ratio, 'label'] = 0
-        # p_data_twitter.loc[(p_data_twitter['delta_ratio'] > -1 * delta_ratio) &
-        #                    (p_data_twitter['delta_ratio'] < delta_ratio), 'label'] = 9
 
-        # 前日比 削除
-        # del p_data_twitter['delta_ratio']
-
-    # お気に入りが0、または、リツイートが0は除外
-    # if favorite_retweet_flag:
-    #     p_data_twitter = p_data_twitter[(p_data_twitter['favorite_count'] != 0) | (p_data_twitter['retweet_count'] != 0)]
-
-    # 休場は除外
-    # if closed_flag:
-    #     p_data_twitter = p_data_twitter[p_data_twitter['closed_flag'] == 0]
-
-    # 削除
+    # id,favorite_count,retweet_count,sentiment_analysis,close_price,price_result
     del p_data_twitter['screen_name']
     del p_data_twitter['jst_time']
-    # del p_data_twitter['favorite_count']
-    # del p_data_twitter['retweet_count']
-
+    del p_data_twitter['full_text']
     del p_data_twitter['date_time']
     del p_data_twitter['close_price']
     del p_data_twitter['delta_date']
     del p_data_twitter['s_delta_date']
     del p_data_twitter['delta_close_price']
-    del p_data_twitter['closed_flag']
-
-    # 列名変更
-    p_data_twitter = p_data_twitter.rename(columns={'full_text': 'text'})
 
     # 欠損データの除去
     p_data_twitter.dropna(inplace=True)
@@ -113,11 +170,8 @@ def make_dataset(s_date, delta):
 if __name__ == '__main__':
     date_start = '20220509'
     date_end = '20221031'
-    data_delta = -1   # 何日後と比較するか
-    # delta_ratio = 1  # 前日比の差
+    data_delta = 5   # 何日後の株価と比較するか
     data_dir = f'data-{data_delta}'
-    # favorite_retweet_flag = True
-    # closed_flag = False
 
     # date_indexのデータ型：datetime64
     date_index = pd.date_range(start=date_start, end=date_end, freq="D")
@@ -127,14 +181,13 @@ if __name__ == '__main__':
     for index, date in enumerate(date_ary.values):
         print(f'{index}={date}')
         path = f'{data_dir}/ml_data_{date}'
-        # twitterのツイートにより2日後の株価は上がるかラベル付けする
-        df = make_dataset(date, data_delta)
+        df = data_processing(date, data_delta)
+        # データをファイルに出力
         if df is not None:
-            # データをファイルに出力
             df.to_csv(path, index=False)
 
     # date = '20220509'
     # path = f'data/ml_data_{date}'
-    # df = make_dataset(date, -1)
+    # df = data_processing(date, -1)
     # # データをファイルに出力
     # df.to_csv(path, index=False)

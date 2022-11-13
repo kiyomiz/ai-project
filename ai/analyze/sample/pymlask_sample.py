@@ -17,7 +17,7 @@ list_text = [
 emotion_analyer = mlask.MLAsk()
 ans = emotion_analyer.analyze('彼のことは嫌いではない')
 print(ans)
-ans = emotion_analyer.analyze('嫌い')
+ans = emotion_analyer.analyze('嫌い。健全')
 print(ans)
 
 cmd = 'echo `mecab-config --dicdir`"/mecab-ipadic-neologd"'

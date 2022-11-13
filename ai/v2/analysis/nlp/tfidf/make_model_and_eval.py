@@ -77,19 +77,19 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
     mouth_period = 3
     delta_ratio = 1  # 変化率の0からの差
-    favorite_retweet_flag = True
+    favorite_retweet_flag = False
     date_start = 20220509
 
     tdatetime = datetime.strptime(str(date_start), '%Y%m%d')
     tdatetime = tdatetime + relativedelta(months=mouth_period - 1)
     date_end = int(get_last_date(tdatetime).strftime('%Y%m%d'))
 
-    data_dir = 'data-1'
+    data_dir = 'data-2'
     data_path = f'../{data_dir}/ml_base_data'
     vocab_dir = 'vocab'
-    vocab_path = f'{vocab_dir}/20220509-20220630'
-    model_dir = 'model-1'
-    output_ml_result_dir = f'{model_dir}/{date_start}-{mouth_period}'
+    vocab_path = f'{vocab_dir}/20220509-20220731'
+    model_dir = 'model-2'
+    output_ml_result_dir = f'{model_dir}/{date_start}-{mouth_period}-{delta_ratio}-{favorite_retweet_flag}'
 
     # データの読込み
     ml_base_data = pd.read_csv(data_path, header=0)
@@ -128,8 +128,8 @@ if __name__ == '__main__':
         ml_base_data = ml_base_data_0.append(ml_base_data_1, ignore_index=True)
 
     # データ数の参考情報を表示
-    train_data, val_data = train_test_split(ml_base_data, test_size=0.4, random_state=0)
-    val_data, test_data = train_test_split(val_data, test_size=0.5, random_state=0)
+    train_data, val_data = train_test_split(ml_base_data, test_size=0.4, random_state=0, stratify=ml_base_data['label'])
+    val_data, test_data = train_test_split(val_data, test_size=0.5, random_state=0, stratify=val_data['label'])
     print(f'Train:{len(train_data)}件 Val:{len(val_data)}件 Test:{len(test_data)}件')
     print(f'price_status Train  1:{len(train_data.loc[train_data["label"]==1])}件')
     print(f'price_status Train  0:{len(train_data.loc[train_data["label"]==0])}件')

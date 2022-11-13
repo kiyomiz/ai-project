@@ -83,7 +83,7 @@ class Net(pl.LightningModule):
 
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 20)
-    mouth_period = 2
+    mouth_period = 3
     delta_ratio = 1  # 変化率の0からの差
     favorite_retweet_flag = True
     date_start = 20220509
@@ -92,12 +92,12 @@ if __name__ == '__main__':
     tdatetime = tdatetime + relativedelta(months=mouth_period - 1)
     date_end = int(get_last_date(tdatetime).strftime('%Y%m%d'))
 
-    data_dir = 'data-1'
+    data_dir = 'data-4'
     data_path = f'../{data_dir}/ml_base_data'
     vocab_dir = 'vocab'
     vocab_path = f'{vocab_dir}/{date_start}-{date_end}'
-    model_dir = 'model-1'
-    output_ml_result_dir = f'{model_dir}/{date_start}-{mouth_period}'
+    model_dir = 'model-4'
+    output_ml_result_dir = f'{model_dir}/{date_start}-{mouth_period}-{delta_ratio}-{favorite_retweet_flag}'
 
     # 辞書の読込み
     collate = Collate(vocab_path, None)
@@ -144,8 +144,8 @@ if __name__ == '__main__':
     # labelはfloatから文字列に変換(vocabが文字列のみのため)
     ml_base_data['label'] = ml_base_data['label'].map('{:.0f}'.format)
 
-    train_data, val_data = train_test_split(ml_base_data, test_size=0.4, random_state=0)
-    val_data, test_data = train_test_split(val_data, test_size=0.5, random_state=0)
+    train_data, val_data = train_test_split(ml_base_data, test_size=0.4, random_state=0, stratify=ml_base_data.label)
+    val_data, test_data = train_test_split(val_data, test_size=0.5, random_state=0, stratify=val_data.label)
     print(f'Train:{len(train_data)}件 Val:{len(val_data)}件 Test:{len(test_data)}件')
     print(f'price_status Train  1:{len(train_data.loc[train_data["label"]=="1"])}件')
     print(f'price_status Train  0:{len(train_data.loc[train_data["label"]=="0"])}件')

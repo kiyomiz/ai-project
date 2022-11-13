@@ -2,11 +2,11 @@ import os
 import pandas as pd
 
 if __name__ == '__main__':
-    data_dir = 'data-1'
+    data_dir = 'data--1'
     base_path = f'{data_dir}/ml_base_data'
 
     date_start = '20220509'
-    date_end = '20220930'
+    date_end = '20221031'
     # date_indexのデータ型：datetime64
     date_index = pd.date_range(start=date_start, end=date_end, freq="D")
     # date_aryは、pandas.core.series.Series
